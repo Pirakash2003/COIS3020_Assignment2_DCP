@@ -80,25 +80,64 @@ namespace COIS3020_Assignment2_DCP {
 
         //Inserting and Deleting
         public void Insert(string S, int i)
-        {
+         {
             //Getting data
+            if (i < 0 || i > S.Length)
+            {
+                throw new ArgumentOutOfRangeException("i", "Index is out of range");
+            }
+
+            //making new node using string S
+            Rope R1 = new Rope(S);
+
+            // Split nodes if necessary to create space for the new substring
+            SplitNodeResult splitResult = SplitNode(Root, i);
+            RopeNode R2 = splitResult.Left;
+            RopeNode R3 = splitResult.Right;
+
+            // Concatenate R1, R2, and R3 to form the new rope
+            RopeNode newRoot = ConcatenateNodes(ConcatenateNodes(R1.Root, R2), R3);
+
+            // Update the root of the rope
+            Root = newRoot;
         }
         public void Delete(int i, int j)
         {
-            //Choosing where to delete
+            if (i < 0 || j >= S.Length || i > j)
+            {
+                throw new ArgumentOutOfRangeException("i or j", "Indices are out of range");
+            }
 
-            //Search via series of Nodes(no array)
+            // Split the current rope at indices i - 1 and j to give ropes R1, R2, and R3
+            SplitNodeResult splitResult1 = SplitNode(Root, i);
+            SplitNodeResult splitResult2 = SplitNode(splitResult1.Right, j - i + 1);
+
+            RopeNode R1 = splitResult1.Left;
+            RopeNode R2 = splitResult2.Left;
+            RopeNode R3 = splitResult2.Right;
+
+            // Concatenate R1 and R3
+            RopeNode newRoot = ConcatenateNodes(R1, R3);
+
+            // Update the root of the current rope
+            Root = newRoot;
         }
 
         //Substrings
         public string subString(int i, int j)
         {
-            //Search in big string first
-            string result = "abc";
-            //Searches until finding a smaller part
-            return result;
-        }
+            if (i < 0 || j >= S.Length || i > j)
+            {
+                throw new ArgumentOutOfRangeException("i or j", "Indices are out of range");
+            }
 
+            // Traverse the rope to find the substring
+            StringBuilder substringBuilder = new StringBuilder();
+            TraverseForSubstring(Root, i, j, substringBuilder);
+
+            // Return the constructed substring
+            return substringBuilder.ToString();
+        }
         public int Find(string S)
         {
             int i = 0;
@@ -110,12 +149,21 @@ namespace COIS3020_Assignment2_DCP {
 
         public char CharAt(int i)
         {
-            return 'a';
+            if (i < 0 || i >= S.Length)
+            {
+                throw new ArgumentOutOfRangeException("i", "Index is out of range");
+            }
+
+            // Return the character at index i
+            return S[i];
         }
 
         public void Reverse()
-        {
+       {
             //Possibly use for loop to find
+            char[] charArray = S.ToCharArray();
+            Array.Reverse(charArray);
+            S = new string(charArray);
         }
 
         public int Length(Node node)
@@ -298,16 +346,38 @@ namespace COIS3020_Assignment2_DCP {
 
         private Node Rebalance(Node node)
         {
-            if(node is InternalNode internalNode)
+            private Node Rebalance(Node node) //Pirakash
+        {
+            if (node is RopeNode ropeNode)
             {
-                Node left = Rebalance(internalNode.Left);
-                Node right = Rebalance(internalNode.Right);
+                // Calculate the depth of the current node
+                int depth = CalculateDepth(ropeNode);
 
-                return Concatenate(left, right);
+                // Check if the current node needs rebalancing
+                if (depth >= 2)
+                {
+                    // Convert the current node and its subtrees into balanced ropes
+                    List<RopeNode> balancedRopes = new List<RopeNode>();
+                    ConvertToBalancedRopes(ropeNode, balancedRopes);
+
+                    // Concatenate the sequence of balanced ropes
+                    Node concatenated = ConcatenateBalancedRopes(balancedRopes);
+
+                    // Return the concatenated node
+                    return concatenated;
+                }
+                else
+                {
+                    // No rebalancing needed, continue recursively
+                    ropeNode.Left = Rebalance(ropeNode.Left);
+                    ropeNode.Right = Rebalance(ropeNode.Right);
+                }
             }
 
-            //Returning
+            // Returning leaf nodes unchanged
             return node;
+
+        }
             
         }
     }
